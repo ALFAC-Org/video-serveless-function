@@ -1,0 +1,62 @@
+name: Build and Deploy Python Lambda with Layer # Nome do workflow
+
+on: # Evento que dispara o workflow
+  push: # Quando há um push
+    branches: # Em branches específicas
+      - main # Branch principal
+
+jobs: # Definição dos jobs
+  build-and-deploy: # Nome do job
+    runs-on: ubuntu-latest # Ambiente onde o job será executado
+
+    steps: # Passos do job
+      - name: Checkout code # Nome do passo
+        uses: actions/checkout@v2 # Ação para fazer checkout do código
+
+      - name: Set up Docker Buildx # Nome do passo
+        uses: docker/setup-buildx-action@v1 # Ação para configurar o Docker Buildx
+
+      - name: Build Docker image # Nome do passo
+        run: docker build -t lambda-layer -f video_slicer/Dockerfile . # Comando para construir a imagem Docker
+
+      - name: Run Docker container and extract layer.zip # Nome do passo
+        run: docker run --rm -v ${{ github.workspace }}:/output lambda-layer cp /lambda/layer.zip /output/ # Executa o contêiner Docker e extrai o arquivo layer.zip
+
+      - name: Upload layer.zip to S3 # Nome do passo
+        run: aws s3 cp layer.zip s3://${{ secrets.AWS_BUCKET_NAME }}/lambda_layers/layer.zip # Comando para fazer upload do layer.zip para o S3
+        env: # Variáveis de ambiente
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} # Chave de acesso AWS
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # Chave secreta AWS
+
+      - name: Publish Lambda Layer # Nome do passo
+        run: | # Comando para publicar a camada Lambda
+          aws lambda publish-layer-version \
+            --layer-name py_layer_video_slicer \
+            --content S3Bucket=${{ secrets.AWS_BUCKET_NAME }},S3Key=path/to/layer.zip \
+            --compatible-runtimes python3.10
+        env: # Variáveis de ambiente
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} # Chave de acesso AWS
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # Chave secreta AWS
+
+      - name: Set up Python # Nome do passo
+        uses: actions/setup-python@v2 # Ação para configurar o Python
+        with: # Parâmetros da ação
+          python-version: '3.10' # Versão do Python
+
+      - name: Install dependencies # Nome do passo
+        run: | # Comando para instalar dependências
+          python -m pip install --upgrade pip
+          pip install -r video_slicer/requirements.txt
+
+      - name: Package Lambda function # Nome do passo
+        run: | # Comando para empacotar a função Lambda
+          cd video_slicer
+          zip -r9 ../video_slicer.zip .
+
+      - name: Deploy to AWS Lambda # Nome do passo
+        uses: aws-actions/aws-lambda-deploy@v1 # Ação para fazer deploy na AWS Lambda
+        with: # Parâmetros da ação
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }} # Chave de acesso AWS
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # Chave secreta AWS
+          function-name: video_slicer # Nome da função Lambda
+          zip-file: video_slicer.zip # Arquivo zip da função Lambda
