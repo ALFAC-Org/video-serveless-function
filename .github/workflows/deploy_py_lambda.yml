@@ -20,7 +20,7 @@ jobs:
         run: docker build -t lambda-layer -f video_slicer/Dockerfile .
 
       - name: Run Docker container and extract layer.zip
-        run: docker run --rm -v ${{ github.workspace }}:/output lambda-layer cp /lambda/layer.zip /output/
+        run: docker run --rm --entrypoint "" -v ${{ github.workspace }}:/output lambda-layer cp /lambda/layer.zip /output/
 
       - name: Upload layer.zip to S3
         run: aws s3 cp layer.zip s3://${{ secrets.AWS_BUCKET_NAME }}/lambda_layers/layer.zip
