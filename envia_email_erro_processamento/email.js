@@ -12,7 +12,7 @@ const enviaEmail = async (email, videoName) => {
             pass: process.env.ALFAC_ORG_EMAIL_PASSWORD
         }
     });
-    console.log('Transporter criado');
+    console.log('Transporter criado com sucecesso');
     
     // Definir as opções do email
     let mailOptions = {
@@ -21,7 +21,7 @@ const enviaEmail = async (email, videoName) => {
         subject: 'noreply: Erro no processamento do vídeo',
         text: `Você está recebendo essa mensagem porque houve um erro no processamento do seu vídeo - ${videoName}. Verifique a plataforma e tente novamente.`
     };
-    console.log('MailOptions criado');
+    console.log('MailOptions criado com sucecesso');
 
 
     // Enviar o email
