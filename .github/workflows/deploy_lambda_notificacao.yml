@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'envia_email_erro_processamento/**'
   workflow_dispatch:
 
 jobs:
