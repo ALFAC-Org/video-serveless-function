@@ -31,25 +31,6 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Build Docker image
-        run: docker build -t lambda-layer -f video_slicer/Dockerfile .
-
-      - name: Run Docker container and extract layer.zip
-        run: docker run --rm --entrypoint "" -v ${{ github.workspace }}:/output lambda-layer cp /lambda/layer.zip /output/
-
-      - name: Upload layer.zip to S3
-        run: aws s3 cp layer.zip s3://${{ secrets.LAMBDA_BUCKET_NAME }}/lambda_layers/layer.zip
-
-      - name: Publish Lambda Layer
-        run: |
-          aws lambda publish-layer-version \
-            --layer-name py_layer_video_slicer \
-            --content S3Bucket=${{ env.LAMBDA_BUCKET_NAME }},S3Key=lambda_layers/layer.zip \
-            --compatible-runtimes python3.10
-
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
@@ -60,13 +41,33 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r video_slicer/requirements.txt
 
-      - name: Package Lambda function
+      - name: Zip and upload each file
         run: |
-          cd video_slicer
-          zip -r9 ../video_slicer.zip .
+          for file in ${{ steps.find_files.outputs.files }}; do
+            dir_name=$(basename $(dirname "$file"))
+            zip_name="$dir_name.zip"
+            cd "$(dirname "$file")"
+            zip -r "$zip_name" . -x "*.git*"
+            aws s3 cp "$zip_name" s3://${{ secrets.LAMBDA_BUCKET_NAME }}/"$zip_name"
+            cd - # Volta para o diretório anterior
+          done
 
-      - name: Deploy to AWS Lambda
+      - name: Update Lambda function code
         run: |
-          aws lambda update-function-code \
-            --function-name video_slicer \
-            --zip-file fileb://video_slicer.zip
+          for file in ${{ steps.find_files.outputs.files }}; do
+            dir_name=$(basename $(dirname "$file"))
+            zip_name="$dir_name.zip"
+            function_name="$dir_name"
+            aws lambda update-function-code --function-name "$function_name" --s3-bucket ${{ secrets.LAMBDA_BUCKET_NAME }} --s3-key "$zip_name"
+          done
+
+      - name: Wait for Lambda update to complete
+        run: sleep 60
+
+      - name: Update Lambda environment variables
+        run: |
+          for file in ${{ steps.find_files.outputs.files }}; do
+            dir_name=$(basename $(dirname "$file"))
+            function_name="$dir_name"
+            aws lambda update-function-configuration --function-name "$function_name" --environment "Variables={ALFAC_ORG_EMAIL=${{ env.ALFAC_ORG_EMAIL }},ALFAC_ORG_EMAIL_PASSWORD=${{ secrets.ALFAC_ORG_EMAIL_PASSWORD }}}"
+          done
