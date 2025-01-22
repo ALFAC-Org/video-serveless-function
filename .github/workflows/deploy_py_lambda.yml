@@ -12,6 +12,13 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      LAMBDA_BUCKET_NAME: ${{ secrets.LAMBDA_BUCKET_NAME }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -34,26 +41,14 @@ jobs:
         run: docker run --rm --entrypoint "" -v ${{ github.workspace }}:/output lambda-layer cp /lambda/layer.zip /output/
 
       - name: Upload layer.zip to S3
-        run: aws s3 cp layer.zip s3://${{ secrets.AWS_BUCKET_NAME }}/lambda_layers/layer.zip
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_BUCKET_NAME: ${{ secrets.LAMBDA_BUCKET_NAME }}
+        run: aws s3 cp layer.zip s3://${{ secrets.LAMBDA_BUCKET_NAME }}/lambda_layers/layer.zip
 
       - name: Publish Lambda Layer
         run: |
           aws lambda publish-layer-version \
             --layer-name py_layer_video_slicer \
-            --content S3Bucket=${{ env.AWS_BUCKET_NAME }},S3Key=lambda_layers/layer.zip \
+            --content S3Bucket=${{ env.LAMBDA_BUCKET_NAME }},S3Key=lambda_layers/layer.zip \
             --compatible-runtimes python3.10
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_BUCKET_NAME: ${{ secrets.LAMBDA_BUCKET_NAME }}
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -75,9 +70,3 @@ jobs:
           aws lambda update-function-code \
             --function-name video_slicer \
             --zip-file fileb://video_slicer.zip
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_BUCKET_NAME: ${{ secrets.LAMBDA_BUCKET_NAME }}
