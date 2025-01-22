@@ -16,7 +16,6 @@ const enviaEmail = async (email, videoName) => {
     
     // Definir as opções do email
     let mailOptions = {
-        // TODO: Mover para variavel de ambiente
         from: process.env.ALFAC_ORG_EMAIL,
         to: email,
         subject: 'noreply: Erro no processamento do vídeo',

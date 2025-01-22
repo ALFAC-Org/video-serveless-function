@@ -1,0 +1,73 @@
+name: Deploy to AWS Lambda
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'envia_email_erro_processamento/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '18'
+
+    - name: Install dependencies
+      run: |
+        for dir in $(find . -name 'package.json' -exec dirname {} \;); do
+          cd "$dir"
+          npm install
+          cd - # Volta para o diretório anterior
+        done
+
+    - name: Find all JavaScript files
+      id: find_files
+      run: |
+        files=$(find . -name '*.js' -not -path '*/node_modules/*')
+        echo "::set-output name=files::$files"
+
+    - name: Zip and upload each file
+      run: |
+        for file in ${{ steps.find_files.outputs.files }}; do
+          dir_name=$(basename $(dirname "$file"))
+          zip_name="$dir_name.zip"
+          cd "$(dirname "$file")"
+          zip -r "$zip_name" . -x "*.git*"
+          aws s3 cp "$zip_name" s3://${{ secrets.LAMBDA_BUCKET_NAME }}/"$zip_name"
+          cd - # Volta para o diretório anterior
+        done
+   
+    - name: Update Lambda function code
+      run: |
+        for file in ${{ steps.find_files.outputs.files }}; do
+          dir_name=$(basename $(dirname "$file"))
+          zip_name="$dir_name.zip"
+          function_name="$dir_name"
+          aws lambda update-function-code --function-name "$function_name" --s3-bucket ${{ secrets.LAMBDA_BUCKET_NAME }} --s3-key "$zip_name"
+        done
+  
+    - name: Wait for Lambda update to complete
+      run: sleep 60
+
+    - name: Update Lambda environment variables
+      run: |
+        for file in ${{ steps.find_files.outputs.files }}; do
+          dir_name=$(basename $(dirname "$file"))
+          function_name="$dir_name"
+          aws lambda update-function-configuration --function-name "$function_name" --environment "Variables={ALFAC_ORG_EMAIL=${{ env.ALFAC_ORG_EMAIL }},ALFAC_ORG_EMAIL_PASSWORD=${{ secrets.ALFAC_ORG_EMAIL_PASSWORD }}}"
+        done
