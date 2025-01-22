@@ -22,8 +22,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: us-east-1
-          #aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -35,12 +34,13 @@ jobs:
         run: docker run --rm --entrypoint "" -v ${{ github.workspace }}:/output lambda-layer cp /lambda/layer.zip /output/
 
       - name: Upload layer.zip to S3
-        run: aws s3 cp layer.zip s3://${{ env.AWS_BUCKET_NAME }}/lambda_layers/layer.zip
+        run: aws s3 cp layer.zip s3://${{ secrets.AWS_BUCKET_NAME }}/lambda_layers/layer.zip
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_BUCKET_NAME: foodflix-videos
-          ############################################ TROCAR DE env PRA secrets
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_BUCKET_NAME: ${{ secrets.LAMBDA_BUCKET_NAME }}
 
       - name: Publish Lambda Layer
         run: |
@@ -51,8 +51,9 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_BUCKET_NAME: foodflix-videos
-      ############################################ TROCAR DE env PRA secrets
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_BUCKET_NAME: ${{ secrets.LAMBDA_BUCKET_NAME }}
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -77,4 +78,6 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_BUCKET_NAME: foodflix-videos
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_BUCKET_NAME: ${{ secrets.LAMBDA_BUCKET_NAME }}
