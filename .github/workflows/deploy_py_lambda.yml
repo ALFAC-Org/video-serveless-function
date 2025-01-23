@@ -41,6 +41,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r video_slicer/requirements.txt
 
+      - name: Find files to zip
+        id: find_files
+        run: |
+          files=$(find video_slicer -type f -name "*.py")
+          echo "::set-output name=files::$files"
+
       - name: Zip and upload each file
         run: |
           for file in ${{ steps.find_files.outputs.files }}; do
@@ -62,7 +68,7 @@ jobs:
           done
 
       - name: Wait for Lambda update to complete
-        run: sleep 60
+        run: sleep 30
 
       - name: Get URL for TO_PROCESS_QUEUE_URL
         id: get_to_process_queue_url
