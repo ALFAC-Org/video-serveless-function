@@ -64,10 +64,22 @@ jobs:
       - name: Wait for Lambda update to complete
         run: sleep 60
 
+      - name: Get URL for TO_PROCESS_QUEUE_URL
+        id: get_to_process_queue_url
+        run: |
+          queue_url=$(aws sqs get-queue-url --queue-name videos_to_process --query 'QueueUrl' --output text)
+          echo "::set-output name=to_process_queue_url::$queue_url"
+
+      - name: Get URL for STATUS_QUEUE_URL
+        id: get_status_queue_url
+        run: |
+          queue_url=$(aws sqs get-queue-url --queue-name update_processing_status --query 'QueueUrl' --output text)
+          echo "::set-output name=status_queue_url::$queue_url"
+
       - name: Update Lambda environment variables
         run: |
           for file in ${{ steps.find_files.outputs.files }}; do
             dir_name=$(basename $(dirname "$file"))
             function_name="$dir_name"
-            aws lambda update-function-configuration --function-name "$function_name" --environment "Variables={ALFAC_ORG_EMAIL=${{ env.ALFAC_ORG_EMAIL }},ALFAC_ORG_EMAIL_PASSWORD=${{ secrets.ALFAC_ORG_EMAIL_PASSWORD }}}"
+            aws lambda update-function-configuration --function-name "$function_name" --environment "Variables={TO_PROCESS_QUEUE_URL=${{ steps.get_to_process_queue_url.outputs.to_process_queue_url }},STATUS_QUEUE_URL=${{ steps.get_status_queue_url.outputs.status_queue_url }},LAMBDA_BUCKET_NAME=${{ secrets.LAMBDA_BUCKET_NAME }}"
           done
