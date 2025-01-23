@@ -62,12 +62,12 @@ jobs:
         done
   
     - name: Wait for Lambda update to complete
-      run: sleep 60
+      run: sleep 30
 
     - name: Update Lambda environment variables
       run: |
         for file in ${{ steps.find_files.outputs.files }}; do
           dir_name=$(basename $(dirname "$file"))
           function_name="$dir_name"
-          aws lambda update-function-configuration --function-name "$function_name" --environment "Variables={ALFAC_ORG_EMAIL=${{ env.ALFAC_ORG_EMAIL }},ALFAC_ORG_EMAIL_PASSWORD=${{ secrets.ALFAC_ORG_EMAIL_PASSWORD }}}"
+          aws lambda update-function-configuration --function-name "$function_name" --environment "Variables={ALFAC_ORG_EMAIL=${{ secrets.ALFAC_ORG_EMAIL }},ALFAC_ORG_EMAIL_PASSWORD=${{ secrets.ALFAC_ORG_EMAIL_PASSWORD }}}"
         done

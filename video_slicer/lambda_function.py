@@ -71,7 +71,7 @@ def check_file_exists_in_s3(bucket_name, s3_key):
         return True
     except s3.exceptions.ClientError as e:
         if e.response['Error']['Code'] == '404':
-            print("Arquivo não encontrado no bucket.")
+            print("Erro - Arquivo não encontrado no bucket.")
             return False
         raise
 
