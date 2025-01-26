@@ -37,61 +37,44 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
+      - name: Install dependencies and create deployment package
         run: |
           for file in video_slicer/*/; do
             if [ -d "$file" ]; then
-              echo "Installing dependencies in: $file"
+              echo "Processing directory: $file"
               cd "$file"
               
-              # Instala as dependências no diretório atual
-              python -m pip install --upgrade pip
+              # Instala as dependências necessárias
               pip install opencv-python-headless numpy -t .
               pip install -r ../../requirements.txt -t .
               
-              # Verifica a instalação
-              echo "Contents after installation:"
+              # Lista o conteúdo para debug
+              echo "Directory contents:"
               ls -la
+              
+              # Cria o ZIP
+              zip_name="$(basename $(pwd)).zip"
+              zip -r "$zip_name" . -x "*.git*"
+              
+              # Verifica o conteúdo do ZIP
+              echo "ZIP contents:"
+              unzip -l "$zip_name"
+              
+              # Upload para S3
+              aws s3 cp "$zip_name" s3://${{ secrets.LAMBDA_BUCKET_NAME }}/"$zip_name"
               
               cd ../../
             fi
           done
 
-      - name: Find files to zip
-        id: find_files
+      - name: Update Lambda functions
         run: |
-          files=$(find video_slicer -type f -name "*.py")
-          echo "::set-output name=files::$files"
-
-      - name: Zip and upload each file
-        run: |
-          for file in ${{ steps.find_files.outputs.files }}; do
-            dir_name=$(basename $(dirname "$file"))
-            zip_name="$dir_name.zip"
-            cd "$(dirname "$file")"
-            
-            # Lista os arquivos antes do zip para debug
-            echo "Contents before zipping in $(pwd):"
-            ls -la
-            
-            # Inclui todos os arquivos, incluindo as dependências instaladas
-            zip -r "$zip_name" . -x "*.git*"
-            
-            # Verifica o conteúdo do ZIP
-            echo "Contents of ZIP file:"
-            unzip -l "$zip_name"
-            
-            aws s3 cp "$zip_name" s3://${{ secrets.LAMBDA_BUCKET_NAME }}/"$zip_name"
-            cd - # Volta para o diretório anterior
-          done
-
-      - name: Update Lambda function code
-        run: |
-          for file in ${{ steps.find_files.outputs.files }}; do
-            dir_name=$(basename $(dirname "$file"))
-            zip_name="$dir_name.zip"
-            function_name="$dir_name"
-            aws lambda update-function-code --function-name "$function_name" --s3-bucket ${{ secrets.LAMBDA_BUCKET_NAME }} --s3-key "$zip_name"
+          for file in video_slicer/*/; do
+            if [ -d "$file" ]; then
+              dir_name=$(basename "$file")
+              zip_name="$dir_name.zip"
+              aws lambda update-function-code --function-name "$dir_name" --s3-bucket ${{ secrets.LAMBDA_BUCKET_NAME }} --s3-key "$zip_name"
+            fi
           done
 
       - name: Wait for Lambda update to complete
@@ -111,8 +94,10 @@ jobs:
 
       - name: Update Lambda environment variables
         run: |
-          for file in ${{ steps.find_files.outputs.files }}; do
-            dir_name=$(basename $(dirname "$file"))
-            function_name="$dir_name"
-            aws lambda update-function-configuration --function-name "$function_name" --environment "Variables={TO_PROCESS_QUEUE_URL=${{ steps.get_to_process_queue_url.outputs.to_process_queue_url }},STATUS_QUEUE_URL=${{ steps.get_status_queue_url.outputs.status_queue_url }},LAMBDA_BUCKET_NAME=${{ secrets.LAMBDA_BUCKET_NAME }}}"
+          for file in video_slicer/*/; do
+            if [ -d "$file" ]; then
+              dir_name=$(basename "$file")
+              function_name="$dir_name"
+              aws lambda update-function-configuration --function-name "$function_name" --environment "Variables={TO_PROCESS_QUEUE_URL=${{ steps.get_to_process_queue_url.outputs.to_process_queue_url }},STATUS_QUEUE_URL=${{ steps.get_status_queue_url.outputs.status_queue_url }},LAMBDA_BUCKET_NAME=${{ secrets.LAMBDA_BUCKET_NAME }}}"
+            fi
           done
