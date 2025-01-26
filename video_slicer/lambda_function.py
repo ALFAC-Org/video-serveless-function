@@ -25,9 +25,14 @@ def lambda_handler(event, context):
     update_status(video_name, "PROCESSANDO")
 
     source_s3_key = f"videos/{video_name}.zip"
+    print(f"Chave do arquivo fonte no S3: {source_s3_key}")
     output_s3_key = f"zip/{video_name}_thumbnails.zip"
+    print(f"Chave do arquivo de saída no S3: {output_s3_key}")
     download_path = "/tmp/video.zip"
+    print(f"Caminho do arquivo baixado: {download_path}")
     output_zip = "/tmp/thumbnails.zip"
+    print(f"Caminho do arquivo de saída: {output_zip}")
+
 
     try:
         if not check_file_exists_in_s3(BUCKET_NAME, source_s3_key):
