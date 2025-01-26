@@ -81,9 +81,10 @@ def respond(status_code, message):
 
 def check_file_exists_in_s3(bucket_name, s3_key):
     try:
+        print(f"Verificando se o arquivo existe no S3: {bucket_name}, {s3_key}")
         s3.head_object(Bucket=bucket_name, Key=s3_key)
-        print(f"Arquivo encontrado no S3: {s3_key}")
         return True
+
     except s3.exceptions.ClientError as e:
         if e.response['Error']['Code'] == '404':
 
