@@ -48,18 +48,30 @@ jobs:
             if [ -d "$file" ]; then
               echo "Installing dependencies in: $file"
               cd "$file"
-              # Instala todas as dependências necessárias no diretório atual
-              pip install opencv-python-headless numpy -t .
-              pip install -r ../../requirements.txt -t .
+              
+              # Cria um ambiente virtual temporário
+              python -m venv venv
+              source venv/bin/activate
+              
+              # Instala as dependências no diretório atual
+              pip install --upgrade pip
+              pip install opencv-python-headless numpy --target .
+              pip install -r ../../requirements.txt --target .
+              
+              # Desativa o ambiente virtual
+              deactivate
+              
+              # Remove o ambiente virtual
+              rm -rf venv
               
               # Mostra o tamanho das pastas de dependências
               echo "Checking dependency folders:"
-              du -sh ./cv2
-              du -sh ./numpy
+              find . -maxdepth 1 -type d -exec du -sh {} \;
               
               # Lista todas as pastas e arquivos
               echo "All files and folders in directory:"
               ls -R
+              
               cd ../../
             fi
           done
@@ -81,14 +93,8 @@ jobs:
             echo "Contents before zipping in $(pwd):"
             ls -la
             
-            # Verifica se as pastas de dependências existem
-            if [ ! -d "cv2" ] || [ ! -d "numpy" ]; then
-              echo "ERROR: Missing dependency folders!"
-              exit 1
-            fi
-            
             # Inclui todos os arquivos, incluindo as dependências instaladas
-            zip -r "$zip_name" * -x "*.git*"
+            zip -r "$zip_name" * -x "*.git*" -x "venv/*"
             
             # Verifica o conteúdo e tamanho do ZIP
             echo "Contents of ZIP file:"
