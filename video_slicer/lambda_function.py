@@ -9,7 +9,7 @@ s3 = boto3.client('s3')
 
 TO_PROCESS_QUEUE_URL = os.getenv('TO_PROCESS_QUEUE_URL')
 STATUS_QUEUE_URL = os.getenv('STATUS_QUEUE_URL')
-BUCKET_NAME = os.getenv('BUCKET_NAME')
+BUCKET_NAME = os.getenv('LAMBDA_BUCKET_NAME')
 
 def lambda_handler(event, context):
     if 'Records' not in event or not event['Records']:
