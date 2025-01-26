@@ -31,18 +31,28 @@ def lambda_handler(event, context):
 
     try:
         if not check_file_exists_in_s3(BUCKET_NAME, source_s3_key):
+            print(f"Arquivo não encontrado no S3: {source_s3_key}")
             raise FileNotFoundError(f"Arquivo não encontrado no S3.")
 
+
         download_video_from_s3(BUCKET_NAME, source_s3_key, download_path)
+        print(f"Arquivo baixado do S3: {download_path}")
         extract_zip(download_path, "/tmp")
+        print(f"Arquivo extraído: {download_path}")
         video_file = find_video_file("/tmp")
+        print(f"Arquivo de vídeo encontrado: {video_file}")
 
         if not video_file:
+            print("Arquivo de vídeo .mp4 não encontrado após extração.")
             raise FileNotFoundError("Arquivo de vídeo .mp4 não encontrado após extração.")
 
+        print(f"Gerando thumbnails do vídeo: {video_file}")
         create_thumbnails(f"/tmp/{video_file}", interval=20, output_zip=output_zip)
+        print(f"Thumbnails criados e salvos: {output_zip}")
         upload_file_to_s3(BUCKET_NAME, output_s3_key, output_zip)
+        print(f"Thumbnails enviados para o S3: {output_s3_key}")
         update_status(video_name, "PROCESSADO")
+        print(f"Status atualizado para PROCESSADO: {video_name}")
         delete_message_from_sqs(TO_PROCESS_QUEUE_URL, receipt_handle)
 
         return respond(200, "Thumbnails criados e enviados com sucesso.")
