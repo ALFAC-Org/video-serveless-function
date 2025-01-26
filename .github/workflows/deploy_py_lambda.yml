@@ -46,8 +46,20 @@ jobs:
         run: |
           for file in video_slicer/*/; do
             if [ -d "$file" ]; then
+              echo "Installing dependencies in: $file"
               cd "$file"
-              pip install opencv-python-headless -t .
+              # Instala todas as dependências necessárias no diretório atual
+              pip install opencv-python-headless numpy -t .
+              pip install -r ../../requirements.txt -t .
+              
+              # Mostra o tamanho das pastas de dependências
+              echo "Checking dependency folders:"
+              du -sh ./cv2
+              du -sh ./numpy
+              
+              # Lista todas as pastas e arquivos
+              echo "All files and folders in directory:"
+              ls -R
               cd ../../
             fi
           done
@@ -64,14 +76,26 @@ jobs:
             dir_name=$(basename $(dirname "$file"))
             zip_name="$dir_name.zip"
             cd "$(dirname "$file")"
+            
             # Lista os arquivos antes do zip para debug
             echo "Contents before zipping in $(pwd):"
             ls -la
+            
+            # Verifica se as pastas de dependências existem
+            if [ ! -d "cv2" ] || [ ! -d "numpy" ]; then
+              echo "ERROR: Missing dependency folders!"
+              exit 1
+            fi
+            
             # Inclui todos os arquivos, incluindo as dependências instaladas
             zip -r "$zip_name" * -x "*.git*"
-            # Verifica o conteúdo do ZIP
+            
+            # Verifica o conteúdo e tamanho do ZIP
             echo "Contents of ZIP file:"
             unzip -l "$zip_name"
+            echo "ZIP file size:"
+            ls -lh "$zip_name"
+            
             aws s3 cp "$zip_name" s3://${{ secrets.LAMBDA_BUCKET_NAME }}/"$zip_name"
             cd - # Volta para o diretório anterior
           done
