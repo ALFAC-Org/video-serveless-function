@@ -17,7 +17,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
       AWS_REGION: ${{ secrets.AWS_REGION }}
-      LAMBDA_BUCKET_NAME: ${{ secrets.LAMBDA_BUCKET_NAME }}
+      BUCKET_FILES_NAME: ${{ secrets.BUCKET_FILES_NAME }}
 
     steps:
     - name: Checkout code
@@ -50,7 +50,7 @@ jobs:
           zip_name="$dir_name.zip"
           cd "$(dirname "$file")"
           zip -r "$zip_name" . -x "*.git*"
-          aws s3 cp "$zip_name" s3://${{ env.LAMBDA_BUCKET_NAME }}/"$zip_name"
+          aws s3 cp "$zip_name" s3://${{ env.BUCKET_FILES_NAME }}/"$zip_name"
           cd - # Volta para o diretório anterior
         done
    
@@ -60,7 +60,7 @@ jobs:
           dir_name=$(basename $(dirname "$file"))
           zip_name="$dir_name.zip"
           function_name="$dir_name"
-          aws lambda update-function-code --function-name "$function_name" --s3-bucket ${{ env.LAMBDA_BUCKET_NAME }} --s3-key "$zip_name"
+          aws lambda update-function-code --function-name "$function_name" --s3-bucket ${{ env.BUCKET_FILES_NAME }} --s3-key "$zip_name"
         done
   
     - name: Wait for Lambda update to complete
@@ -83,5 +83,5 @@ jobs:
         for file in ${{ steps.find_files.outputs.files }}; do
           dir_name=$(basename $(dirname "$file"))
           function_name="$dir_name"
-          aws lambda update-function-configuration --function-name "$function_name" --environment "Variables={TO_PROCESS_QUEUE_URL=${{ steps.get_to_process_queue_url.outputs.to_process_queue_url }},STATUS_QUEUE_URL=${{ steps.get_status_queue_url.outputs.status_queue_url }},LAMBDA_BUCKET_NAME=${{ env.LAMBDA_BUCKET_NAME }}}"
+          aws lambda update-function-configuration --function-name "$function_name" --environment "Variables={TO_PROCESS_QUEUE_URL=${{ steps.get_to_process_queue_url.outputs.to_process_queue_url }},STATUS_QUEUE_URL=${{ steps.get_status_queue_url.outputs.status_queue_url }},BUCKET_FILES_NAME=${{ env.BUCKET_FILES_NAME }}}"
         done
