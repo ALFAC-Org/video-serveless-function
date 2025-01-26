@@ -40,41 +40,41 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r video_slicer/requirements.txt
+          pip install -r video_slicer/requirements.txt -t .
           
-      - name: Install OpenCV in deployment directories
-        run: |
-          for file in video_slicer/*/; do
-            if [ -d "$file" ]; then
-              echo "Installing dependencies in: $file"
-              cd "$file"
+      # - name: Install OpenCV in deployment directories
+      #   run: |
+      #     for file in video_slicer/*/; do
+      #       if [ -d "$file" ]; then
+      #         echo "Installing dependencies in: $file"
+      #         cd "$file"
               
-              # Cria um ambiente virtual temporário
-              python -m venv venv
-              source venv/bin/activate
+      #         # Cria um ambiente virtual temporário
+      #         python -m venv venv
+      #         source venv/bin/activate
               
-              # Instala as dependências no diretório atual
-              pip install --upgrade pip
-              pip install opencv-python-headless numpy --target .
-              pip install -r ../../requirements.txt --target .
+      #         # Instala as dependências no diretório atual
+      #         pip install --upgrade pip
+      #         pip install opencv-python-headless numpy --target .
+      #         pip install -r ../../requirements.txt --target .
               
-              # Desativa o ambiente virtual
-              deactivate
+      #         # Desativa o ambiente virtual
+      #         deactivate
               
-              # Remove o ambiente virtual
-              rm -rf venv
+      #         # Remove o ambiente virtual
+      #         rm -rf venv
               
-              # Mostra o tamanho das pastas de dependências
-              echo "Checking dependency folders:"
-              find . -maxdepth 1 -type d -exec du -sh {} \;
+      #         # Mostra o tamanho das pastas de dependências
+      #         echo "Checking dependency folders:"
+      #         find . -maxdepth 1 -type d -exec du -sh {} \;
               
-              # Lista todas as pastas e arquivos
-              echo "All files and folders in directory:"
-              ls -R
+      #         # Lista todas as pastas e arquivos
+      #         echo "All files and folders in directory:"
+      #         ls -R
               
-              cd ../../
-            fi
-          done
+      #         cd ../../
+      #       fi
+      #     done
 
       - name: Find files to zip
         id: find_files
