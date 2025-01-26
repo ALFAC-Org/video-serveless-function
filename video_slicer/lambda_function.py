@@ -39,9 +39,8 @@ def lambda_handler(event, context):
             print(f"Arquivo não encontrado no S3: {source_s3_key}")
             raise FileNotFoundError(f"Arquivo não encontrado no S3.")
 
-
+        print(f"Baixando arquivo do S3: {BUCKET_NAME}, {source_s3_key}, {download_path}")
         download_video_from_s3(BUCKET_NAME, source_s3_key, download_path)
-        print(f"Arquivo baixado do S3: {download_path}")
         extract_zip(download_path, "/tmp")
         print(f"Arquivo extraído: {download_path}")
         video_file = find_video_file("/tmp")
@@ -83,9 +82,11 @@ def respond(status_code, message):
 def check_file_exists_in_s3(bucket_name, s3_key):
     try:
         s3.head_object(Bucket=bucket_name, Key=s3_key)
+        print(f"Arquivo encontrado no S3: {s3_key}")
         return True
     except s3.exceptions.ClientError as e:
         if e.response['Error']['Code'] == '404':
+
             print("Erro - Arquivo não encontrado no bucket.")
             return False
         raise
