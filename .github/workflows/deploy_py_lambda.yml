@@ -2,7 +2,6 @@ name: Build and Deploy video_slicer Lambda
 
 on:
   push:
-
     branches:
       - main
     paths:
@@ -10,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     env:
@@ -21,83 +20,68 @@ jobs:
       LAMBDA_BUCKET_NAME: ${{ secrets.LAMBDA_BUCKET_NAME }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: ${{ secrets.AWS_REGION }}
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.10'
+    - name: Install dependencies
+      run: |
+        for dir in $(find . -name 'requirements.txt' -exec dirname {} \;); do
+          cd "$dir"
+          pip install -r requirements.txt -t .
+          pip install opencv-python-headless numpy -t .
+          cd - # Volta para o diretório anterior
+        done
 
-      - name: Install dependencies and create deployment package
-        run: |
-          for file in video_slicer/*/; do
-            if [ -d "$file" ]; then
-              echo "Processing directory: $file"
-              cd "$file"
-              
-              # Instala as dependências necessárias
-              pip install opencv-python-headless numpy -t .
-              pip install -r ../../requirements.txt -t .
-              
-              # Lista o conteúdo para debug
-              echo "Directory contents:"
-              ls -la
-              
-              # Cria o ZIP
-              zip_name="$(basename $(pwd)).zip"
-              zip -r "$zip_name" . -x "*.git*"
-              
-              # Verifica o conteúdo do ZIP
-              echo "ZIP contents:"
-              unzip -l "$zip_name"
-              
-              # Upload para S3
-              aws s3 cp "$zip_name" s3://${{ secrets.LAMBDA_BUCKET_NAME }}/"$zip_name"
-              
-              cd ../../
-            fi
-          done
+    - name: Find all Python files
+      id: find_files
+      run: |
+        files=$(find . -name '*.py' -not -path '*/venv/*')
+        echo "::set-output name=files::$files"
 
-      - name: Update Lambda functions
-        run: |
-          for file in video_slicer/*/; do
-            if [ -d "$file" ]; then
-              dir_name=$(basename "$file")
-              zip_name="$dir_name.zip"
-              aws lambda update-function-code --function-name "$dir_name" --s3-bucket ${{ secrets.LAMBDA_BUCKET_NAME }} --s3-key "$zip_name"
-            fi
-          done
+    - name: Zip and upload each file
+      run: |
+        for file in ${{ steps.find_files.outputs.files }}; do
+          dir_name=$(basename $(dirname "$file"))
+          zip_name="$dir_name.zip"
+          cd "$(dirname "$file")"
+          zip -r "$zip_name" . -x "*.git*"
+          aws s3 cp "$zip_name" s3://${{ env.LAMBDA_BUCKET_NAME }}/"$zip_name"
+          cd - # Volta para o diretório anterior
+        done
+   
+    - name: Update Lambda function code
+      run: |
+        for file in ${{ steps.find_files.outputs.files }}; do
+          dir_name=$(basename $(dirname "$file"))
+          zip_name="$dir_name.zip"
+          function_name="$dir_name"
+          aws lambda update-function-code --function-name "$function_name" --s3-bucket ${{ env.LAMBDA_BUCKET_NAME }} --s3-key "$zip_name"
+        done
+  
+    - name: Wait for Lambda update to complete
+      run: sleep 30
 
-      - name: Wait for Lambda update to complete
-        run: sleep 30
+    - name: Get URL for TO_PROCESS_QUEUE_URL
+      id: get_to_process_queue_url
+      run: |
+        queue_url=$(aws sqs get-queue-url --queue-name videos_to_process --query 'QueueUrl' --output text)
+        echo "::set-output name=to_process_queue_url::$queue_url"
 
-      - name: Get URL for TO_PROCESS_QUEUE_URL
-        id: get_to_process_queue_url
-        run: |
-          queue_url=$(aws sqs get-queue-url --queue-name videos_to_process --query 'QueueUrl' --output text)
-          echo "::set-output name=to_process_queue_url::$queue_url"
+    - name: Get URL for STATUS_QUEUE_URL
+      id: get_status_queue_url
+      run: |
+        queue_url=$(aws sqs get-queue-url --queue-name update_processing_status --query 'QueueUrl' --output text)
+        echo "::set-output name=status_queue_url::$queue_url"
 
-      - name: Get URL for STATUS_QUEUE_URL
-        id: get_status_queue_url
-        run: |
-          queue_url=$(aws sqs get-queue-url --queue-name update_processing_status --query 'QueueUrl' --output text)
-          echo "::set-output name=status_queue_url::$queue_url"
-
-      - name: Update Lambda environment variables
-        run: |
-          for file in video_slicer/*/; do
-            if [ -d "$file" ]; then
-              dir_name=$(basename "$file")
-              function_name="$dir_name"
-              aws lambda update-function-configuration --function-name "$function_name" --environment "Variables={TO_PROCESS_QUEUE_URL=${{ steps.get_to_process_queue_url.outputs.to_process_queue_url }},STATUS_QUEUE_URL=${{ steps.get_status_queue_url.outputs.status_queue_url }},LAMBDA_BUCKET_NAME=${{ secrets.LAMBDA_BUCKET_NAME }}}"
-            fi
-          done
+    - name: Update Lambda environment variables
+      run: |
+        for file in ${{ steps.find_files.outputs.files }}; do
+          dir_name=$(basename $(dirname "$file"))
+          function_name="$dir_name"
+          aws lambda update-function-configuration --function-name "$function_name" --environment "Variables={TO_PROCESS_QUEUE_URL=${{ steps.get_to_process_queue_url.outputs.to_process_queue_url }},STATUS_QUEUE_URL=${{ steps.get_status_queue_url.outputs.status_queue_url }},LAMBDA_BUCKET_NAME=${{ env.LAMBDA_BUCKET_NAME }}}"
+        done
