@@ -64,7 +64,14 @@ jobs:
             dir_name=$(basename $(dirname "$file"))
             zip_name="$dir_name.zip"
             cd "$(dirname "$file")"
-            zip -r "$zip_name" . -x "*.git*"
+            # Lista os arquivos antes do zip para debug
+            echo "Contents before zipping in $(pwd):"
+            ls -la
+            # Inclui todos os arquivos, incluindo as dependências instaladas
+            zip -r "$zip_name" * -x "*.git*"
+            # Verifica o conteúdo do ZIP
+            echo "Contents of ZIP file:"
+            unzip -l "$zip_name"
             aws s3 cp "$zip_name" s3://${{ secrets.LAMBDA_BUCKET_NAME }}/"$zip_name"
             cd - # Volta para o diretório anterior
           done
