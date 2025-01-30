@@ -9,7 +9,7 @@ s3 = boto3.client('s3')
 
 TO_PROCESS_QUEUE_URL = os.getenv('TO_PROCESS_QUEUE_URL')
 STATUS_QUEUE_URL = os.getenv('STATUS_QUEUE_URL')
-BUCKET_NAME = os.getenv('BUCKET_NAME')
+BUCKET_FILES_NAME = os.getenv('BUCKET_FILES_NAME')
 
 def lambda_handler(event, context):
     if 'Records' not in event or not event['Records']:
@@ -25,24 +25,38 @@ def lambda_handler(event, context):
     update_status(video_name, "PROCESSANDO")
 
     source_s3_key = f"videos/{video_name}.zip"
+    print(f"Chave do arquivo fonte no S3: {source_s3_key}")
     output_s3_key = f"zip/{video_name}_thumbnails.zip"
+    print(f"Chave do arquivo de saída no S3: {output_s3_key}")
     download_path = "/tmp/video.zip"
+    print(f"Caminho do arquivo baixado: {download_path}")
     output_zip = "/tmp/thumbnails.zip"
+    print(f"Caminho do arquivo de saída: {output_zip}")
+
 
     try:
-        if not check_file_exists_in_s3(BUCKET_NAME, source_s3_key):
+        if not check_file_exists_in_s3(BUCKET_FILES_NAME, source_s3_key):
+            print(f"Arquivo não encontrado no S3: {source_s3_key}")
             raise FileNotFoundError(f"Arquivo não encontrado no S3.")
 
-        download_video_from_s3(BUCKET_NAME, source_s3_key, download_path)
+        print(f"Baixando arquivo do S3: {BUCKET_FILES_NAME}, {source_s3_key}, {download_path}")
+        download_video_from_s3(BUCKET_FILES_NAME, source_s3_key, download_path)
         extract_zip(download_path, "/tmp")
+        print(f"Arquivo extraído: {download_path}")
         video_file = find_video_file("/tmp")
+        print(f"Arquivo de vídeo encontrado: {video_file}")
 
         if not video_file:
+            print("Arquivo de vídeo .mp4 não encontrado após extração.")
             raise FileNotFoundError("Arquivo de vídeo .mp4 não encontrado após extração.")
 
+        print(f"Gerando thumbnails do vídeo: {video_file}")
         create_thumbnails(f"/tmp/{video_file}", interval=20, output_zip=output_zip)
-        upload_file_to_s3(BUCKET_NAME, output_s3_key, output_zip)
+        print(f"Thumbnails criados e salvos: {output_zip}")
+        upload_file_to_s3(BUCKET_FILES_NAME, output_s3_key, output_zip)
+        print(f"Thumbnails enviados para o S3: {output_s3_key}")
         update_status(video_name, "PROCESSADO")
+        print(f"Status atualizado para PROCESSADO: {video_name}")
         delete_message_from_sqs(TO_PROCESS_QUEUE_URL, receipt_handle)
 
         return respond(200, "Thumbnails criados e enviados com sucesso.")
@@ -67,10 +81,13 @@ def respond(status_code, message):
 
 def check_file_exists_in_s3(bucket_name, s3_key):
     try:
+        print(f"Verificando se o arquivo existe no S3: {bucket_name}, {s3_key}")
         s3.head_object(Bucket=bucket_name, Key=s3_key)
         return True
+
     except s3.exceptions.ClientError as e:
         if e.response['Error']['Code'] == '404':
+
             print("Erro - Arquivo não encontrado no bucket.")
             return False
         raise

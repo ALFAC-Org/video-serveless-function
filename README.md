@@ -1,70 +1,68 @@
-# video-serveless-function
-Repositório para as funções na cloud.
+# Funções Video Studio
 
------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Este é um repositório git que utiliza as configurações anteriormente criadas pelo repositório [https://github.com/ALFAC-Org/video-cloud-infra](https://github.com/ALFAC-Org/video-cloud-infra) para aplicar as configurações faltantes para a provisão de recursos de *funções lambdas* ou *funções serveless*  da aplicação [Video Studio](https://github.com/ALFAC-Org/video-studio). Nele, você encontrará as lambdas que são executadas na aplicação, bem como o fluxo para a atualização destes códigos. No momento, o repositório está focado na Amazon Web Services (AWS), usando as funções lambdas. Entretanto, o repositório é flexível para adaptação para outros provedores de funções serveless.
 
-# Lambda video_slice
-Função Lambda para processar vídeos enviados para um bucket S3.
+> [!WARNING]
+> Para completo funcionamento da plataforma, é necessário seguir todo o fluxo de provisionamento:
+> 1. A provisão da infraestrutura [https://github.com/ALFAC-Org/video-cloud-infra](https://github.com/ALFAC-Org/video-cloud-infra);
+> 2. A provisão das lambdas [https://github.com/ALFAC-Org/video-serveless-function](https://github.com/ALFAC-Org/video-serveless-function);
+> 2. A provisão da aplicação [https://github.com/ALFAC-Org/video-studio](https://github.com/ALFAC-Org/video-studio)
 
-## Desenho do fluxo de trabalho da Lambda
+![passos-seguir](docs/passos-provisao.png)
 
-![fluxo_da_lambda_video_slicer](docs/video_slicer_flow.png)
+## Conceito
 
-## Visão Geral
-Este projeto utiliza uma função AWS Lambda para processar vídeos enviados para um bucket S3. A função:
-- Recebe uma mensagem da fila SQS informando o nome do vídeo a ser processado.
-- Baixa o arquivo ZIP contendo o vídeo do S3.
-- Extrai o arquivo ZIP e encontra o vídeo MP4.
-- Gera thumbnails do vídeo em intervalos regulares.
-- Compacta os thumbnails em um novo arquivo ZIP e envia de volta ao S3.
-- Atualiza o status do processamento em uma fila SQS.
+Toda a infraestrutura é criada no repositório [https://github.com/ALFAC-Org/video-cloud-infra](https://github.com/ALFAC-Org/video-cloud-infra), haja visto que é necessário a provisão de recursos compartilhados entre os projetos, como VPC, grupos de acesso e entre outros. Com isso, este repositório fica responsável por de fato, atualizar o código que será utilizado pela a aplicação.
 
-## Tecnologias Utilizadas
-- **AWS Lambda** - Executa a função automaticamente.
-- **Amazon S3** - Armazena os vídeos e os thumbnails gerados.
-- **Amazon SQS** - Gerencia as mensagens de processamento e status.
-- **OpenCV (cv2)** - Extrai thumbnails dos vídeos.
-- **boto3** - Biblioteca para interação com os serviços da AWS.
+De modo geral, as lambdas ficarão responsáveis por provisionar:
 
-## Configuração
-Antes de executar o código, certifique-se de definir as seguintes variáveis de ambiente na AWS Lambda:
+- o processamento do vídeo enviado;
+- a notificação para o usuário em caso de falhas.
 
-```plaintext
-TO_PROCESS_QUEUE_URL=<URL_da_fila_SQS_para_processamento>
-STATUS_QUEUE_URL=<URL_da_fila_SQS_para_status>
-BUCKET_NAME=<Nome_do_Bucket_S3>
-```
+Tudo isso dentro da plataforma [Video Studio](https://github.com/ALFAC-Org/video-studio).
 
-## Fluxo de Processamento
-1. A função Lambda é acionada por uma mensagem na fila **TO_PROCESS_QUEUE_URL**.
-2. O nome do vídeo é extraído da mensagem.
-3. O status do vídeo é atualizado para **PROCESSANDO** na fila **STATUS_QUEUE_URL**.
-4. O arquivo ZIP do vídeo é baixado do S3 e extraído.
-5. O arquivo MP4 dentro do ZIP é identificado.
-6. Thumbnails são gerados a cada **20 segundos** de vídeo.
-7. As imagens são compactadas em um novo arquivo ZIP.
-8. O ZIP contendo os thumbnails é enviado de volta para o S3.
-9. O status do vídeo é atualizado para **PROCESSADO** na fila **STATUS_QUEUE_URL**.
-10. A mensagem processada é removida da fila **TO_PROCESS_QUEUE_URL**.
+## Como rodar o projeto
 
-## Status de Processamento
-Durante o fluxo, o status do vídeo será atualizado na fila **STATUS_QUEUE_URL** com os seguintes valores:
-- **PROCESSANDO**: O vídeo está sendo processado e os thumbnails estão sendo gerados.
-- **PROCESSADO**: O processamento foi concluído e os thumbnails foram enviados para o S3.
-- **ERRO**: Ocorreu um erro durante o processamento do vídeo.
+- **Via GitHub Actions**
 
-## Execução
+<details>
+  <summary>Passo a passo</summary>
 
-Em um ambiente AWS, a função Lambda será acionada automaticamente quando uma mensagem for enviada para a fila configurada.
+1. Acesse [https://github.com/ALFAC-Org/video-serveless-function/actions](https://github.com/ALFAC-Org/video-serveless-function/actions) (A guia `Actions` deste repositório);
+2. Acesse `Deploy to AWS Lambda`;
+3. Clique em `Run workflow` (ou Executar workflow);
+4. Aguarde. Se tudo der certo, o `check` verde deverá aparecer - o processo dura em torno de 2 a 5 minutos;
+   1. ![infra-criada-sucesso](./docs/serveless-1-sucesso.png)
+   2. ![serveless-sucesso](./docs/serveless-sucesso.png)
 
-## Erros e Tratamento de Exceções
-- Se o arquivo não for encontrado no S3, um erro será gerado.
-- Se o vídeo não puder ser processado, o status será atualizado para **ERRO** na fila SQS.
-- Se ocorrer qualquer outra exceção, a mensagem será retornada com um código de erro HTTP 500.
+[TODO]
 
-## Conclusão
-Este projeto automatiza a extração de thumbnails de vídeos enviados para o Amazon S3 utilizando AWS Lambda e SQS, garantindo um fluxo eficiente e escalável. 🚀
+</details>
 
------------------------------------------------------------------------------------------------------------------------------------------------------------------
+### Recursos provisionados
 
+Os seguintes recursos serão criados/atualizados:
 
+- Lambdas: novo código/versão, bem como variáveis ambiente necessárias para estas lambdas.
+
+### Acessando as lambdas
+
+Você saberá que tudo estará bem, quando acessar a aplicação principal [https://github.com/ALFAC-Org/video-studio](https://github.com/ALFAC-Org/video-studio) acessando a url do Load Balancer e então seguindo o fluxo para o upload e processamento do vídeo.
+
+Ou então acessando ao console AWS e verificando pelas lambdas criadas.
+
+## Documentação técnica das Lambdas
+
+Para mais detalhes sobre as funções Lambda, consulte:
+- video_slicer: [documentação](video_slicer/README.md)
+- envia_email_erro_processamento //TODO: documentação
+
+## Membros
+
+| Nome | RM | E-mail | GitHub |
+| --- | --- | --- | --- |
+| Leonardo Fraga | RM354771 | [rm354771@fiap.com.br](mailto:rm354771@fiap.com.br) | [@LeonardoFraga](https://github.com/LeonardoFraga) |
+| Carlos Henrique Carvalho de Santana | RM355339 | [rm355339@fiap.com.br](mailto:rm355339@fiap.com.br) | [@carlohcs](https://github.com/carlohcs) |
+| Leonardo Alves Campos | RM355568 | [rm355568@fiap.com.br](mailto:rm355568@fiap.com.br) | [@lcalves](https://github.com/lcalves) |
+| Andre Musolino | RM355582 | [rm355582@fiap.com.br](mailto:rm355582@fiap.com.br) | [@amusolino](https://github.com/amusolino) |
+| Caio Antunes Gonçalves | RM354913 | [rm354913@fiap.com.br](mailto:rm354913@fiap.com.br) | [@caio367](https://github.com/caio367) |
