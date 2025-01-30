@@ -3,7 +3,7 @@ Função Lambda para processar vídeos enviados para um bucket S3.
 
 ## Desenho do fluxo de trabalho da Lambda
 
-![fluxo_da_lambda_video_slicer](docs/video_slicer_flow.png)
+![fluxo_da_lambda_video_slicer](../docs/video_slicer_flow.png)
 
 ## Visão Geral
 Este projeto utiliza uma função AWS Lambda para processar vídeos enviados para um bucket S3. A função:
