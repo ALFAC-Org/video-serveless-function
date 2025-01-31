@@ -21,18 +21,19 @@ def lambda_handler(event, context):
     receipt_handle = message['receiptHandle']
 
     print(f"Processando vídeo: {video_name}")
-
     update_status(video_name, "PROCESSANDO")
 
-    source_s3_key = f"videos/{video_name}.zip"
+    source_s3_key = f"videos/{video_name}.mp4"
     print(f"Chave do arquivo fonte no S3: {source_s3_key}")
+    
     output_s3_key = f"zip/{video_name}_thumbnails.zip"
     print(f"Chave do arquivo de saída no S3: {output_s3_key}")
-    download_path = "/tmp/video.zip"
+    
+    download_path = "/tmp/video.mp4"
     print(f"Caminho do arquivo baixado: {download_path}")
+    
     output_zip = "/tmp/thumbnails.zip"
     print(f"Caminho do arquivo de saída: {output_zip}")
-
 
     try:
         if not check_file_exists_in_s3(BUCKET_FILES_NAME, source_s3_key):
@@ -41,9 +42,15 @@ def lambda_handler(event, context):
 
         print(f"Baixando arquivo do S3: {BUCKET_FILES_NAME}, {source_s3_key}, {download_path}")
         download_video_from_s3(BUCKET_FILES_NAME, source_s3_key, download_path)
-        extract_zip(download_path, "/tmp")
-        print(f"Arquivo extraído: {download_path}")
-        video_file = find_video_file("/tmp")
+        
+        print(f"Arquivo baixado: {download_path}")
+        
+        # extract_zip(download_path, "/tmp")
+        # move_file(download_path, "/tmp")
+        
+        # print(f"Arquivo extraído: {download_path}")
+        
+        video_file = find_video_file("./tmp")
         print(f"Arquivo de vídeo encontrado: {video_file}")
 
         if not video_file:
@@ -100,6 +107,10 @@ def extract_zip(zip_path, extract_to):
     print("Extraindo arquivo ZIP.")
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(extract_to)
+
+# def move_file(source_path, destination_path):
+#     print(f"Movendo arquivo de {source_path} para {destination_path}")
+#     os.rename(source_path, destination_path)
 
 def find_video_file(directory):
     print("Procurando arquivo .mp4 no diretório.")
