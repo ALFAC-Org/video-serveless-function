@@ -26,7 +26,7 @@ def lambda_handler(event, context):
     source_s3_key = f"videos/{video_name}"
     print(f"Chave do arquivo fonte no S3: {source_s3_key}")
     
-    output_s3_key = f"zip/{video_name.replace(".mp4", "")}_thumbnails.zip"
+    output_s3_key = f"zip/{video_name.replace('.mp4', '')}_thumbnails.zip"
     print(f"Chave do arquivo de saída no S3: {output_s3_key}")
     
     download_path = f"/tmp/{video_name}"
