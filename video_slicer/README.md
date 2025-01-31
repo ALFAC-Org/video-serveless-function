@@ -8,8 +8,7 @@ Função Lambda para processar vídeos enviados para um bucket S3.
 ## Visão Geral
 Este projeto utiliza uma função AWS Lambda para processar vídeos enviados para um bucket S3. A função:
 - Recebe uma mensagem da fila SQS informando o nome do vídeo a ser processado.
-- Baixa o arquivo ZIP contendo o vídeo do S3.
-- Extrai o arquivo ZIP e encontra o vídeo MP4.
+- Baixa o arquivo contendo o vídeo do S3.
 - Gera thumbnails do vídeo em intervalos regulares.
 - Compacta os thumbnails em um novo arquivo ZIP e envia de volta ao S3.
 - Atualiza o status do processamento em uma fila SQS.
@@ -34,8 +33,8 @@ BUCKET_FILES_NAME=<Nome_do_Bucket_S3>
 1. A função Lambda é acionada por uma mensagem na fila **TO_PROCESS_QUEUE_URL**.
 2. O nome do vídeo é extraído da mensagem.
 3. O status do vídeo é atualizado para **PROCESSANDO** na fila **STATUS_QUEUE_URL**.
-4. O arquivo ZIP do vídeo é baixado do S3 e extraído.
-5. O arquivo MP4 dentro do ZIP é identificado.
+4. O arquivo do vídeo é baixado do S3 e extraído.
+5. O arquivo MP4 é identificado.
 6. Thumbnails são gerados a cada **20 segundos** de vídeo.
 7. As imagens são compactadas em um novo arquivo ZIP.
 8. O ZIP contendo os thumbnails é enviado de volta para o S3.
