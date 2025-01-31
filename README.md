@@ -55,7 +55,7 @@ Ou então acessando ao console AWS e verificando pelas lambdas criadas.
 
 Para mais detalhes sobre as funções Lambda, consulte:
 - video_slicer: [documentação](video_slicer/README.md)
-- envia_email_erro_processamento //TODO: documentação
+- envia_email_erro_processamento: [documentação](envia_email_erro_processamento/README.md)
 
 ## Membros
 

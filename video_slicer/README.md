@@ -58,7 +58,7 @@ Em um ambiente AWS, a função Lambda será acionada automaticamente quando uma 
 - Se ocorrer qualquer outra exceção, a mensagem será retornada com um código de erro HTTP 500.
 
 ## Conclusão
-Este projeto automatiza a extração de thumbnails de vídeos enviados para o Amazon S3 utilizando AWS Lambda e SQS, garantindo um fluxo eficiente e escalável. 🚀
+A função da Lambda é a extração de thumbnails de vídeos enviados para o Amazon S3 utilizando AWS Lambda e SQS, garantindo um fluxo eficiente e escalável. 🚀
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
