@@ -26,7 +26,7 @@ def lambda_handler(event, context):
     source_s3_key = f"videos/{video_name}"
     print(f"Chave do arquivo fonte no S3: {source_s3_key}")
     
-    output_s3_key = f"zip/{video_name}_thumbnails.zip"
+    output_s3_key = f"zip/{video_name.replace(".mp4", "")}_thumbnails.zip"
     print(f"Chave do arquivo de saída no S3: {output_s3_key}")
     
     download_path = f"/tmp/{video_name}"
@@ -44,11 +44,6 @@ def lambda_handler(event, context):
         download_video_from_s3(BUCKET_FILES_NAME, source_s3_key, download_path)
         
         print(f"Arquivo baixado: {download_path}")
-        
-        # extract_zip(download_path, "/tmp")
-        # move_file(download_path, "/tmp")
-        
-        # print(f"Arquivo extraído: {download_path}")
         
         video_file = find_video_file(download_path)
         print(f"Arquivo de vídeo encontrado: {video_file}")
@@ -82,7 +77,7 @@ def delete_message_from_sqs(queue_url, receipt_handle):
 def update_status(video_name, status):
     print(f"Atualizando status para {status} do vídeo: {video_name}")
     message = {
-        "videoName": video_name,
+        "videoName": video_name.replace(".mp4", ""),
         "processingStatus": status
     }
     sqs.send_message(QueueUrl=STATUS_QUEUE_URL, MessageBody=json.dumps(message))
@@ -106,15 +101,6 @@ def check_file_exists_in_s3(bucket_name, s3_key):
 def download_video_from_s3(bucket_name, s3_key, download_path):
     print("Baixando arquivo do S3.")
     s3.download_file(bucket_name, s3_key, download_path)
-
-# def extract_zip(zip_path, extract_to):
-#     print("Extraindo arquivo ZIP.")
-#     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-#         zip_ref.extractall(extract_to)
-
-# def move_file(source_path, destination_path):
-#     print(f"Movendo arquivo de {source_path} para {destination_path}")
-#     os.rename(source_path, destination_path)
 
 def find_video_file(file_path):
     print(f"Procurando arquivo de vídeo: {file_path}")
