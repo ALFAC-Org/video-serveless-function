@@ -69,6 +69,7 @@ def lambda_handler(event, context):
         return respond(200, "Thumbnails criados e enviados com sucesso.")
     except Exception as e:
         update_status(video_name, "ERRO")
+        print(f"Erro durante o processamento do vídeo: {video_name} - ERRO: {str(e)}")
         return respond(500, f"Erro durante o processamento: {str(e)}")
 
 def delete_message_from_sqs(queue_url, receipt_handle):
