@@ -23,13 +23,13 @@ def lambda_handler(event, context):
     print(f"Processando vídeo: {video_name}")
     update_status(video_name, "PROCESSANDO")
 
-    source_s3_key = f"videos/{video_name}.mp4"
+    source_s3_key = f"videos/{video_name}"
     print(f"Chave do arquivo fonte no S3: {source_s3_key}")
     
     output_s3_key = f"zip/{video_name}_thumbnails.zip"
     print(f"Chave do arquivo de saída no S3: {output_s3_key}")
     
-    download_path = "/tmp/video.mp4"
+    download_path = f"/tmp/{video_name}"
     print(f"Caminho do arquivo baixado: {download_path}")
     
     output_zip = "/tmp/thumbnails.zip"
@@ -50,7 +50,7 @@ def lambda_handler(event, context):
         
         # print(f"Arquivo extraído: {download_path}")
         
-        video_file = find_video_file("./tmp")
+        video_file = find_video_file(f"./tmp/{video_file}")
         print(f"Arquivo de vídeo encontrado: {video_file}")
 
         if not video_file:
@@ -103,21 +103,20 @@ def download_video_from_s3(bucket_name, s3_key, download_path):
     print("Baixando arquivo do S3.")
     s3.download_file(bucket_name, s3_key, download_path)
 
-def extract_zip(zip_path, extract_to):
-    print("Extraindo arquivo ZIP.")
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        zip_ref.extractall(extract_to)
+# def extract_zip(zip_path, extract_to):
+#     print("Extraindo arquivo ZIP.")
+#     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+#         zip_ref.extractall(extract_to)
 
 # def move_file(source_path, destination_path):
 #     print(f"Movendo arquivo de {source_path} para {destination_path}")
 #     os.rename(source_path, destination_path)
 
-def find_video_file(directory):
-    print("Procurando arquivo .mp4 no diretório.")
-    for file in os.listdir(directory):
-        if file.endswith('.mp4'):
-            print("Arquivo de vídeo encontrado")
-            return file
+def find_video_file(file_path):
+    print(f"Procurando arquivo de vídeo: {file_path}")
+    if os.path.isfile(file_path):
+        print("Arquivo de vídeo encontrado")
+        return file_path
     print("Nenhum arquivo de vídeo encontrado.")
     return None
 
