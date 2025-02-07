@@ -51,6 +51,12 @@ Você saberá que tudo estará bem, quando acessar a aplicação principal [http
 
 Ou então acessando ao console AWS e verificando pelas lambdas criadas.
 
+## Documentação técnica das Lambdas
+
+Para mais detalhes sobre as funções Lambda, consulte:
+- video_slicer: [documentação](video_slicer/README.md)
+- envia_email_erro_processamento: [documentação](envia_email_erro_processamento/README.md)
+
 ## Membros
 
 | Nome | RM | E-mail | GitHub |
