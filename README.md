@@ -28,14 +28,21 @@ Tudo isso dentro da plataforma [Video Studio](https://github.com/ALFAC-Org/video
 <details>
   <summary>Passo a passo</summary>
 
-1. Acesse [https://github.com/ALFAC-Org/video-serveless-function/actions](https://github.com/ALFAC-Org/video-serveless-function/actions) (A guia `Actions` deste repositório);
-2. Acesse `Deploy to AWS Lambda`;
-3. Clique em `Run workflow` (ou Executar workflow);
-4. Aguarde. Se tudo der certo, o `check` verde deverá aparecer - o processo dura em torno de 2 a 5 minutos;
-   1. ![infra-criada-sucesso](./docs/serveless-1-sucesso.png)
-   2. ![serveless-sucesso](./docs/serveless-sucesso.png)
+**Lambda de Notificação**
 
-[TODO]
+1. Acesse [https://github.com/ALFAC-Org/video-serveless-function/actions](https://github.com/ALFAC-Org/video-serveless-function/actions) (A guia `Actions` deste repositório);
+2. Acesse `Build and Deploy Notification Lambda`;
+1. Clique em `Run workflow` (ou Executar workflow);
+2. Aguarde. Se tudo der certo, o `check` verde deverá aparecer - o processo dura em torno de 2 minutos;
+   1. ![deploy](./docs/lambda-notificacao.png)
+
+**Lambda de Processamento**
+
+1. Acesse [https://github.com/ALFAC-Org/video-serveless-function/actions](https://github.com/ALFAC-Org/video-serveless-function/actions) (A guia `Actions` deste repositório);
+2. Acesse `Build and Deploy video_slicer Lambda`;
+3. Clique em `Run workflow` (ou Executar workflow);
+4. Aguarde. Se tudo der certo, o `check` verde deverá aparecer - o processo dura em torno de 2 minutos;
+   1. ![deploy](./docs/lambda-processamento.png)
 
 </details>
 
